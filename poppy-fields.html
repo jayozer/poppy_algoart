@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Poppy Fields - Algorithmic Art</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.7.0/p5.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&family=Lora:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --anthropic-dark: #141413;
+            --anthropic-light: #faf9f5;
+            --anthropic-mid-gray: #b0aea5;
+            --anthropic-light-gray: #e8e6dc;
+            --anthropic-orange: #d97757;
+            --anthropic-blue: #6a9bcc;
+            --anthropic-green: #788c5d;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, var(--anthropic-light) 0%, #f5f3ee 100%);
+            min-height: 100vh;
+            color: var(--anthropic-dark);
+        }
+
+        .container {
+            display: flex;
+            min-height: 100vh;
+            padding: 20px;
+            gap: 20px;
+        }
+
+        .sidebar {
+            width: 320px;
+            flex-shrink: 0;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(20, 20, 19, 0.1);
+            overflow-y: auto;
+        }
+
+        .sidebar h1 {
+            font-family: 'Lora', serif;
+            font-size: 24px;
+            font-weight: 500;
+            color: var(--anthropic-dark);
+            margin-bottom: 8px;
+        }
+
+        .sidebar .subtitle {
+            color: var(--anthropic-mid-gray);
+            font-size: 14px;
+            margin-bottom: 32px;
+            line-height: 1.4;
+        }
+
+        .control-section { margin-bottom: 32px; }
+
+        .control-section h3 {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--anthropic-dark);
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .control-section h3::before {
+            content: '•';
+            color: #F7931E;
+            font-weight: bold;
+        }
+
+        .seed-input {
+            width: 100%;
+            background: var(--anthropic-light);
+            padding: 12px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            margin-bottom: 12px;
+            border: 1px solid var(--anthropic-light-gray);
+            text-align: center;
+        }
+
+        .seed-input:focus {
+            outline: none;
+            border-color: #F7931E;
+            box-shadow: 0 0 0 2px rgba(247, 147, 30, 0.1);
+            background: white;
+        }
+
+        .seed-controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .control-group { margin-bottom: 20px; }
+
+        .control-group label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--anthropic-dark);
+            margin-bottom: 8px;
+        }
+
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .slider-container input[type="range"] {
+            flex: 1;
+            height: 4px;
+            background: var(--anthropic-light-gray);
+            border-radius: 2px;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        .slider-container input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            background: #F7931E;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .slider-container input[type="range"]::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            background: #F7931E;
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+        }
+
+        .value-display {
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            color: var(--anthropic-mid-gray);
+            min-width: 50px;
+            text-align: right;
+        }
+
+        .color-group { margin-bottom: 16px; }
+
+        .color-group label {
+            display: block;
+            font-size: 12px;
+            color: var(--anthropic-mid-gray);
+            margin-bottom: 4px;
+        }
+
+        .color-picker-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .color-picker-container input[type="color"] {
+            width: 32px;
+            height: 32px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            background: none;
+            padding: 0;
+        }
+
+        .color-value {
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            color: var(--anthropic-mid-gray);
+        }
+
+        .button {
+            width: 100%;
+            padding: 10px 16px;
+            border: none;
+            border-radius: 8px;
+            font-family: 'Poppins', sans-serif;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background: var(--anthropic-light);
+            color: var(--anthropic-dark);
+            border: 1px solid var(--anthropic-light-gray);
+        }
+
+        .button:hover { background: var(--anthropic-light-gray); }
+
+        .button.primary {
+            background: #F7931E;
+            color: white;
+            border: none;
+        }
+
+        .button.primary:hover { background: #e0841a; }
+
+        .button-row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .button-row .button { flex: 1; }
+
+        .canvas-area {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        #canvas-container {
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(20, 20, 19, 0.15);
+        }
+
+        .loading {
+            color: var(--anthropic-mid-gray);
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h1>Poppy Fields</h1>
+            <p class="subtitle">Algorithmic California poppies — generative botanical art inspired by sunshine and joy.</p>
+
+            <div class="control-section">
+                <h3>Seed</h3>
+                <input type="text" id="seed-input" class="seed-input" value="42" onchange="updateSeed()">
+                <div class="seed-controls">
+                    <button class="button" onclick="previousSeed()">← Previous</button>
+                    <button class="button" onclick="nextSeed()">Next →</button>
+                </div>
+                <button class="button primary" onclick="randomSeedAndUpdate()">Random Garden</button>
+            </div>
+
+            <div class="control-section">
+                <h3>Garden</h3>
+                
+                <div class="control-group">
+                    <label>Number of Poppies</label>
+                    <div class="slider-container">
+                        <input type="range" id="poppyCount" min="3" max="20" step="1" value="8" oninput="updateParam('poppyCount', this.value)">
+                        <span class="value-display" id="poppyCount-value">8</span>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label>Petal Waviness</label>
+                    <div class="slider-container">
+                        <input type="range" id="petalWaviness" min="0" max="1" step="0.05" value="0.3" oninput="updateParam('petalWaviness', this.value)">
+                        <span class="value-display" id="petalWaviness-value">0.3</span>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label>Stem Curviness</label>
+                    <div class="slider-container">
+                        <input type="range" id="stemCurve" min="0" max="1" step="0.05" value="0.5" oninput="updateParam('stemCurve', this.value)">
+                        <span class="value-display" id="stemCurve-value">0.5</span>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label>Flower Size</label>
+                    <div class="slider-container">
+                        <input type="range" id="flowerScale" min="0.5" max="1.5" step="0.1" value="1.0" oninput="updateParam('flowerScale', this.value)">
+                        <span class="value-display" id="flowerScale-value">1.0</span>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label>Include Buds</label>
+                    <div class="slider-container">
+                        <input type="range" id="budChance" min="0" max="1" step="0.1" value="0.4" oninput="updateParam('budChance', this.value)">
+                        <span class="value-display" id="budChance-value">0.4</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="control-section">
+                <h3>Colors</h3>
+                
+                <div class="color-group">
+                    <label>Petal Orange</label>
+                    <div class="color-picker-container">
+                        <input type="color" id="color1" value="#F7931E" onchange="updateColor('color1', this.value)">
+                        <span class="color-value" id="color1-value">#F7931E</span>
+                    </div>
+                </div>
+
+                <div class="color-group">
+                    <label>Petal Edge</label>
+                    <div class="color-picker-container">
+                        <input type="color" id="color2" value="#E07B12" onchange="updateColor('color2', this.value)">
+                        <span class="color-value" id="color2-value">#E07B12</span>
+                    </div>
+                </div>
+
+                <div class="color-group">
+                    <label>Stem Teal</label>
+                    <div class="color-picker-container">
+                        <input type="color" id="color3" value="#2BA4B4" onchange="updateColor('color3', this.value)">
+                        <span class="color-value" id="color3-value">#2BA4B4</span>
+                    </div>
+                </div>
+
+                <div class="color-group">
+                    <label>Center Yellow</label>
+                    <div class="color-picker-container">
+                        <input type="color" id="color4" value="#FFD93D" onchange="updateColor('color4', this.value)">
+                        <span class="color-value" id="color4-value">#FFD93D</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="control-section">
+                <h3>Actions</h3>
+                <div class="button-row">
+                    <button class="button" onclick="resetParameters()">Reset</button>
+                    <button class="button primary" onclick="downloadCanvas()">Download PNG</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="canvas-area">
+            <div id="canvas-container">
+                <div class="loading">Growing poppies...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ═══════════════════════════════════════════════════════════════════════
+        // POPPY FIELDS - PARAMETERS
+        // ═══════════════════════════════════════════════════════════════════════
+
+        let params = {
+            seed: 42,
+            poppyCount: 8,
+            petalWaviness: 0.3,
+            stemCurve: 0.5,
+            flowerScale: 1.0,
+            budChance: 0.4,
+            colors: {
+                petalFill: '#F7931E',
+                petalEdge: '#E07B12',
+                stem: '#2BA4B4',
+                center: '#FFD93D'
+            }
+        };
+
+        let defaultParams = JSON.parse(JSON.stringify(params));
+        let poppies = [];
+
+        // ═══════════════════════════════════════════════════════════════════════
+        // P5.JS SETUP
+        // ═══════════════════════════════════════════════════════════════════════
+
+        function setup() {
+            let canvas = createCanvas(800, 800);
+            canvas.parent('canvas-container');
+            
+            generateGarden();
+            document.querySelector('.loading').style.display = 'none';
+        }
+
+        function generateGarden() {
+            randomSeed(params.seed);
+            noiseSeed(params.seed);
+            
+            poppies = [];
+            
+            // Generate poppy positions and properties
+            for (let i = 0; i < params.poppyCount; i++) {
+                let poppy = {
+                    x: random(150, width - 150),
+                    y: random(height * 0.4, height - 100),
+                    size: random(60, 100) * params.flowerScale,
+                    rotation: random(-0.3, 0.3),
+                    petalVariation: random(0.8, 1.2),
+                    stemHeight: random(150, 280),
+                    stemCurveDir: random(-1, 1),
+                    isBud: random() < params.budChance * 0.5,
+                    petalCount: floor(random(4, 6))
+                };
+                poppies.push(poppy);
+            }
+            
+            // Sort by y position for depth
+            poppies.sort((a, b) => a.y - b.y);
+            
+            drawGarden();
+        }
+
+        function drawGarden() {
+            // White background
+            background(255);
+            
+            // Draw all poppies
+            for (let poppy of poppies) {
+                drawPoppy(poppy);
+            }
+        }
+
+        function draw() {
+            // Static artwork - no animation needed
+            noLoop();
+        }
+
+        // ═══════════════════════════════════════════════════════════════════════
+        // POPPY DRAWING FUNCTIONS
+        // ═══════════════════════════════════════════════════════════════════════
+
+        function drawPoppy(p) {
+            push();
+            translate(p.x, p.y);
+            
+            // Draw stem first (behind flower)
+            drawStem(p);
+            
+            // Draw the flower or bud
+            if (p.isBud) {
+                drawBud(p);
+            } else {
+                drawFlower(p);
+            }
+            
+            pop();
+        }
+
+        function drawStem(p) {
+            let stemCol = color(params.colors.stem);
+            stroke(stemCol);
+            strokeWeight(2.5);
+            noFill();
+            
+            // Main stem with S-curve
+            let curveAmount = p.stemCurveDir * params.stemCurve * 40;
+            
+            beginShape();
+            vertex(0, 0);
+            bezierVertex(
+                curveAmount * 0.5, -p.stemHeight * 0.3,
+                -curveAmount * 0.3, -p.stemHeight * 0.6,
+                curveAmount * 0.2, -p.stemHeight
+            );
+            endShape();
+            
+            // Draw small branches with leaves
+            let branchPoints = [0.3, 0.5, 0.7];
+            for (let t of branchPoints) {
+                if (random() > 0.4) {
+                    let bx = bezierPoint(0, curveAmount * 0.5, -curveAmount * 0.3, curveAmount * 0.2, t);
+                    let by = bezierPoint(0, -p.stemHeight * 0.3, -p.stemHeight * 0.6, -p.stemHeight, t);
+                    
+                    push();
+                    translate(bx, by);
+                    
+                    let branchDir = random() > 0.5 ? 1 : -1;
+                    let branchAngle = branchDir * random(0.4, 0.8);
+                    
+                    rotate(branchAngle);
+                    
+                    // Small branch
+                    stroke(stemCol);
+                    strokeWeight(1.5);
+                    let branchLen = random(15, 30);
+                    line(0, 0, branchLen, -branchLen * 0.3);
+                    
+                    // Tiny leaves
+                    drawLeaf(branchLen * 0.5, -branchLen * 0.15, random(8, 12), stemCol);
+                    drawLeaf(branchLen, -branchLen * 0.3, random(8, 12), stemCol);
+                    
+                    pop();
+                }
+            }
+        }
+
+        function drawLeaf(x, y, size, col) {
+            push();
+            translate(x, y);
+            rotate(random(-0.3, 0.3));
+            
+            stroke(col);
+            strokeWeight(1);
+            noFill();
+            
+            // Simple feathery leaf
+            beginShape();
+            vertex(0, 0);
+            bezierVertex(size * 0.3, -size * 0.2, size * 0.7, -size * 0.1, size, 0);
+            endShape();
+            
+            beginShape();
+            vertex(0, 0);
+            bezierVertex(size * 0.3, size * 0.2, size * 0.7, size * 0.1, size, 0);
+            endShape();
+            
+            pop();
+        }
+
+        function drawFlower(p) {
+            push();
+            translate(0, -p.stemHeight);
+            rotate(p.rotation);
+            
+            let petalCol = color(params.colors.petalFill);
+            let edgeCol = color(params.colors.petalEdge);
+            let centerCol = color(params.colors.center);
+            
+            // Draw petals
+            let petalCount = p.petalCount;
+            for (let i = 0; i < petalCount; i++) {
+                push();
+                rotate((TWO_PI / petalCount) * i + random(-0.1, 0.1));
+                drawPetal(p.size * p.petalVariation, petalCol, edgeCol);
+                pop();
+            }
+            
+            // Draw center
+            drawCenter(p.size * 0.25, centerCol, petalCol);
+            
+            pop();
+        }
+
+        function drawPetal(size, fillCol, strokeCol) {
+            push();
+            
+            // Petal shape using bezier curves
+            let waviness = params.petalWaviness;
+            let w = size * 0.6;
+            let h = size;
+            
+            // Add some randomness to control points
+            let wave1 = random(-waviness, waviness) * w * 0.3;
+            let wave2 = random(-waviness, waviness) * w * 0.3;
+            
+            fill(fillCol);
+            stroke(strokeCol);
+            strokeWeight(1.5);
+            
+            beginShape();
+            vertex(0, 0);
+            
+            // Left side of petal
+            bezierVertex(
+                -w * 0.3 + wave1, -h * 0.2,
+                -w * 0.8, -h * 0.5,
+                -w * 0.5 + wave2, -h * 0.85
+            );
+            
+            // Top curve
+            bezierVertex(
+                -w * 0.2, -h,
+                w * 0.2, -h,
+                w * 0.5 - wave2, -h * 0.85
+            );
+            
+            // Right side of petal
+            bezierVertex(
+                w * 0.8, -h * 0.5,
+                w * 0.3 - wave1, -h * 0.2,
+                0, 0
+            );
+            
+            endShape(CLOSE);
+            
+            // Inner detail lines (stamens visible through petal)
+            stroke(strokeCol);
+            strokeWeight(0.8);
+            let detailCount = 5;
+            for (let i = 0; i < detailCount; i++) {
+                let t = map(i, 0, detailCount - 1, -0.3, 0.3);
+                let startX = t * w * 0.3;
+                let endX = t * w * 0.5;
+                let endY = -h * random(0.4, 0.6);
+                
+                beginShape();
+                vertex(startX, -size * 0.1);
+                bezierVertex(
+                    startX, endY * 0.5,
+                    endX, endY * 0.8,
+                    endX + random(-3, 3), endY
+                );
+                endShape();
+            }
+            
+            pop();
+        }
+
+        function drawCenter(size, centerCol, petalCol) {
+            // Fuzzy center with stamens
+            let stemCol = color(params.colors.stem);
+            
+            // Draw stamens
+            stroke(petalCol);
+            strokeWeight(1);
+            let stamenCount = 12;
+            for (let i = 0; i < stamenCount; i++) {
+                let angle = (TWO_PI / stamenCount) * i + random(-0.2, 0.2);
+                let len = size * random(0.8, 1.2);
+                
+                push();
+                rotate(angle);
+                line(0, 0, 0, -len);
+                
+                // Stamen tip
+                fill(centerCol);
+                noStroke();
+                ellipse(0, -len, 3, 3);
+                pop();
+            }
+            
+            // Center circle
+            fill(centerCol);
+            noStroke();
+            ellipse(0, 0, size * 0.6, size * 0.6);
+        }
+
+        function drawBud(p) {
+            push();
+            translate(0, -p.stemHeight);
+            rotate(p.rotation * 2);
+            
+            let petalCol = color(params.colors.petalFill);
+            let edgeCol = color(params.colors.petalEdge);
+            let stemCol = color(params.colors.stem);
+            
+            let budSize = p.size * 0.4;
+            
+            // Bud sepals (green parts)
+            stroke(stemCol);
+            strokeWeight(1.5);
+            fill(stemCol);
+            
+            // Draw overlapping curved shapes for bud
+            for (let i = 0; i < 3; i++) {
+                push();
+                rotate((TWO_PI / 3) * i);
+                beginShape();
+                vertex(0, budSize * 0.2);
+                bezierVertex(
+                    -budSize * 0.3, 0,
+                    -budSize * 0.3, -budSize * 0.7,
+                    0, -budSize
+                );
+                bezierVertex(
+                    budSize * 0.3, -budSize * 0.7,
+                    budSize * 0.3, 0,
+                    0, budSize * 0.2
+                );
+                endShape(CLOSE);
+                pop();
+            }
+            
+            // Hint of orange petal peeking through
+            fill(petalCol);
+            noStroke();
+            ellipse(0, -budSize * 0.5, budSize * 0.3, budSize * 0.4);
+            
+            pop();
+        }
+
+        // ═══════════════════════════════════════════════════════════════════════
+        // UI CONTROL HANDLERS
+        // ═══════════════════════════════════════════════════════════════════════
+
+        function updateParam(paramName, value) {
+            if (paramName === 'poppyCount') {
+                params[paramName] = parseInt(value);
+            } else {
+                params[paramName] = parseFloat(value);
+            }
+            document.getElementById(paramName + '-value').textContent = value;
+            generateGarden();
+        }
+
+        function updateColor(colorId, value) {
+            let colorMap = {
+                'color1': 'petalFill',
+                'color2': 'petalEdge',
+                'color3': 'stem',
+                'color4': 'center'
+            };
+            params.colors[colorMap[colorId]] = value;
+            document.getElementById(colorId + '-value').textContent = value;
+            generateGarden();
+        }
+
+        // ═══════════════════════════════════════════════════════════════════════
+        // SEED CONTROLS
+        // ═══════════════════════════════════════════════════════════════════════
+
+        function updateSeedDisplay() {
+            document.getElementById('seed-input').value = params.seed;
+        }
+
+        function updateSeed() {
+            let input = document.getElementById('seed-input');
+            let newSeed = parseInt(input.value);
+            if (newSeed && newSeed > 0) {
+                params.seed = newSeed;
+                generateGarden();
+            } else {
+                updateSeedDisplay();
+            }
+        }
+
+        function previousSeed() {
+            params.seed = Math.max(1, params.seed - 1);
+            updateSeedDisplay();
+            generateGarden();
+        }
+
+        function nextSeed() {
+            params.seed = params.seed + 1;
+            updateSeedDisplay();
+            generateGarden();
+        }
+
+        function randomSeedAndUpdate() {
+            params.seed = Math.floor(Math.random() * 999999) + 1;
+            updateSeedDisplay();
+            generateGarden();
+        }
+
+        function resetParameters() {
+            params = JSON.parse(JSON.stringify(defaultParams));
+            
+            document.getElementById('poppyCount').value = params.poppyCount;
+            document.getElementById('poppyCount-value').textContent = params.poppyCount;
+            document.getElementById('petalWaviness').value = params.petalWaviness;
+            document.getElementById('petalWaviness-value').textContent = params.petalWaviness;
+            document.getElementById('stemCurve').value = params.stemCurve;
+            document.getElementById('stemCurve-value').textContent = params.stemCurve;
+            document.getElementById('flowerScale').value = params.flowerScale;
+            document.getElementById('flowerScale-value').textContent = params.flowerScale;
+            document.getElementById('budChance').value = params.budChance;
+            document.getElementById('budChance-value').textContent = params.budChance;
+            
+            document.getElementById('color1').value = params.colors.petalFill;
+            document.getElementById('color1-value').textContent = params.colors.petalFill;
+            document.getElementById('color2').value = params.colors.petalEdge;
+            document.getElementById('color2-value').textContent = params.colors.petalEdge;
+            document.getElementById('color3').value = params.colors.stem;
+            document.getElementById('color3-value').textContent = params.colors.stem;
+            document.getElementById('color4').value = params.colors.center;
+            document.getElementById('color4-value').textContent = params.colors.center;
+            
+            updateSeedDisplay();
+            generateGarden();
+        }
+
+        function downloadCanvas() {
+            saveCanvas('poppy-fields-' + params.seed, 'png');
+        }
+
+        window.addEventListener('load', function() {
+            updateSeedDisplay();
+        });
+    </script>
+</body>
+</html>
