@@ -380,9 +380,10 @@
             </div>
 
             <div class="control-section">
-                <h3>Send to Parent</h3>
+                <h3>Save & Share</h3>
+                <button class="button primary" onclick="downloadCanvas()" style="margin-bottom: 12px;">Download Picture</button>
                 <input type="email" id="parent-email" class="seed-input" placeholder="parent@email.com">
-                <button class="button primary" onclick="sendEmail()">Send My Picture!</button>
+                <button class="button primary" onclick="sendEmail()">Send Picture to Parent</button>
                 <p class="email-note" id="email-status"></p>
             </div>
 
@@ -1096,6 +1097,10 @@
             generateLandscape();
         }
 
+        function downloadCanvas() {
+            saveCanvas('poppy-garden-' + params.seedName, 'png');
+        }
+
         // ═══════════════════════════════════════════════════════════════════════
         // EMAIL FUNCTIONALITY
         // ═══════════════════════════════════════════════════════════════════════
@@ -1105,13 +1110,17 @@
         const EMAILJS_SERVICE_ID = "pkart_novato";
         const EMAILJS_TEMPLATE_ID = "poppy_garden_art";
 
+        // Cloudinary Configuration
+        const CLOUDINARY_CLOUD_NAME = "dmgjhhbpv";
+        const CLOUDINARY_UPLOAD_PRESET = "poppy_art";
+
         function initEmailJS() {
             if (typeof emailjs !== 'undefined' && EMAILJS_PUBLIC_KEY !== "YOUR_PUBLIC_KEY") {
                 emailjs.init(EMAILJS_PUBLIC_KEY);
             }
         }
 
-        function sendEmail() {
+        async function sendEmail() {
             const emailInput = document.getElementById('parent-email');
             const statusEl = document.getElementById('email-status');
             const email = emailInput.value.trim();
@@ -1123,37 +1132,59 @@
                 return;
             }
 
-            // Check if EmailJS is configured
-            if (EMAILJS_PUBLIC_KEY === "YOUR_PUBLIC_KEY") {
-                statusEl.textContent = "Email not configured yet - ask staff for help!";
+            // Check if Cloudinary is configured
+            if (CLOUDINARY_CLOUD_NAME === "YOUR_CLOUD_NAME") {
+                statusEl.textContent = "Cloud storage not configured - ask staff for help!";
                 statusEl.className = "email-note error";
                 return;
             }
 
-            statusEl.textContent = "Sending your picture...";
-            statusEl.className = "email-note";
+            try {
+                statusEl.textContent = "Uploading artwork...";
+                statusEl.className = "email-note";
 
-            // Get canvas as base64 image
-            const canvas = document.querySelector('canvas');
-            const imageData = canvas.toDataURL('image/png');
+                // Get canvas as blob
+                const canvas = document.querySelector('canvas');
+                const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
 
-            // Send email via EmailJS
-            emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
-                to_email: email,
-                child_name: params.seedName,
-                image_data: imageData
-            }).then(
-                function() {
-                    statusEl.textContent = "Sent! Check your email!";
-                    statusEl.className = "email-note success";
-                    emailInput.value = "";
-                },
-                function(error) {
-                    console.error('Email error:', error);
-                    statusEl.textContent = "Oops! Something went wrong. Try again?";
-                    statusEl.className = "email-note error";
+                // Upload to Cloudinary
+                const formData = new FormData();
+                formData.append('file', blob);
+                formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+                formData.append('public_id', 'poppy-garden-' + params.seedName + '-' + Date.now());
+
+                const uploadResponse = await fetch(
+                    `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
+                    { method: 'POST', body: formData }
+                );
+
+                if (!uploadResponse.ok) {
+                    throw new Error('Upload failed');
                 }
-            );
+
+                const uploadData = await uploadResponse.json();
+                const imageUrl = uploadData.secure_url;
+
+                console.log('Image uploaded:', imageUrl);
+
+                statusEl.textContent = "Sending email...";
+
+                // Send email with download link
+                await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+                    to_email: email,
+                    child_name: params.seedName,
+                    image_url: imageUrl
+                });
+
+                statusEl.textContent = "Sent! Check your email!";
+                statusEl.className = "email-note success";
+                emailInput.value = "";
+
+            } catch (error) {
+                console.error('Error:', error);
+                statusEl.textContent = "Something went wrong. Try again?";
+                statusEl.className = "email-note error";
+            }
         }
 
         window.addEventListener('load', function() {
